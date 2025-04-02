@@ -1,3 +1,4 @@
+# backend/app/schemas.py
 from pydantic import BaseModel
 
 class FunctionBase(BaseModel):
@@ -5,13 +6,13 @@ class FunctionBase(BaseModel):
     route: str
     language: str
     timeout: int
+    settings: str = None
 
 class FunctionCreate(FunctionBase):
-    # Inherits all fields for creating a function
     pass
 
-class FunctionRead(FunctionBase):
+class Function(FunctionBase):
     id: int
 
     class Config:
-        orm_mode = True  # Tells Pydantic to read data even if it's not a dict
+        orm_mode = True
