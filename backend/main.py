@@ -1,13 +1,29 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from models import Base, Function
 from schemas import FunctionCreate, FunctionRead
 from database import engine, SessionLocal
+from pydantic import BaseModel
+from functions.pythonfunction import execute_function
 
 # Create the database tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Serverless Function API")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins (or specify your frontend URL, e.g., "http://localhost:3000")
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 # Dependency to get a DB session for each request
 def get_db():
@@ -70,3 +86,26 @@ def delete_function(function_id: int, db: Session = Depends(get_db)):
     db.delete(function)
     db.commit()
     return {"detail": "Function deleted"}
+
+# Model for user-provided code
+class CodeExecutionRequest(BaseModel):
+    code: str
+    timeout: int = 5  # Default timeout in seconds
+
+@app.post("/execute/")
+def execute_code(request: CodeExecutionRequest):
+    # Save the user-provided code to a temporary file
+    code_file = "user_function.py"
+    with open(code_file, "w") as f:
+        f.write(request.code)
+
+    # Execute the code in Docker
+    try:
+        result = execute_function("user_function", timeout=request.timeout)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Clean up the temporary file
+        if os.path.exists(code_file):
+            os.remove(code_file)

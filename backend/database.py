@@ -1,9 +1,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "sqlite:///./functions.db"  # For production, consider using PostgreSQL or another DB
+# For MySQL (example):
+DATABASE_URL = "postgresql://postgres:Akash%402004@localhost:5432/postgres"
 
-engine = create_engine(
-    DATABASE_URL, connect_args={"check_same_thread": False}  # This is for SQLite only
-)
+# For SQL Server (example):
+# DATABASE_URL = "mssql+pyodbc://username:password@myserver:1433/mydatabase?driver=ODBC+Driver+17+for+SQL+Server"
+
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
